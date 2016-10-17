@@ -19,9 +19,6 @@ duct_w = 0.050;     % [m]
 duct_h = nozzle_he; % [m]
 duct_l = 0.270;     % [m]
 
-% For this problematic
-T0 = 300; % [K]
-pa = 1;   % [atm] ~= [bar]
 %% =======================================
 % Isentropique relation
  T0T   = @(x)  (1+((gamma - 1)/2 )*x*x);
@@ -57,9 +54,15 @@ mu_T = @(T) ( ((T/T_ref)^(3/2))*((T_ref + S_ref)/(T + S_ref)) );
 % TO DO: il faut encore faire l'itération pour vérifié Mguess et Lambda
 % guess
 % TO DO: Err.. comment rafiner M_ex ? 
+options = optimset('Display','off');
+
+
 T0e = T0; pe = pa; 
 
-Mg1 = 0.5; 
+% For this problematic
+T0 = 273; % [K]
+pa = 1;   % [atm] ~= [bar]
+Mg1 = 0.335; 
 M_ex = Mg1;
 
 
@@ -78,7 +81,8 @@ fM = lambda/2 * (duct_l)/Dh_duct;
 fM1 = fM + f_M(Mg1);
 % On établit l'équation à faire entrer dans fsolve 
 f_Mnd = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - fM1 ; 
-M_in = fsolve(f_Mnd,0.1);
+M_in = fsolve(f_Mnd,0.1,options);
+
 % calcule des températures Te et Ti
 Te = T0e/T0T(M_ex);
 Ti = fTTstar(M_in) / fTTstar(M_ex) * Te;
@@ -88,7 +92,7 @@ Re_in = M_in * veloC(Ti) * duct_l / mu_T(Ti);
 Re_duct = (Re_ex + Re_in)/2;
 % recalcule du lambda 
 lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))^(-1)))-1/sqrt(lambda_init);
-lambda = fsolve(lambda_cole,0.1);
+lambda = fsolve(lambda_cole,0.1,options);
 error = abs(lambda - lambda0);
 lambda0 = lambda;
 end
@@ -109,7 +113,7 @@ ro_i = pi/(Ti*R);
 ro_t = Aexha/Astar * ro_i * M_in * veloC(Ti);
 
 QmP= @(p0) ( ((2/(gamma+1)).^((gamma+1)/(2*(gamma-1)))) * sqrt(gamma/R) * p0 / sqrt(T0e)) - ro_t;
-p0 = fsolve(QmP,0);
+%p0 = fsolve(QmP,0,options);
 
 % Test du Fanno (pour être sur d'avoir le même graphe)
 %x = linspace(0.3,2,100); 
