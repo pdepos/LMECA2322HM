@@ -62,7 +62,7 @@ T0e = T0; pe = pa;
 % For this problematic
 T0 = 273; % [K]
 pa = 1;   % [atm] ~= [bar]
-Mg1 = 0.1; 
+Mg1 = 0.01; 
 M_ex = Mg1;
 
 
@@ -86,9 +86,12 @@ M_in = fsolve(f_Mnd,0.1,options);
 % calcule des températures Te et Ti
 Te = T0e/T0T(M_ex);
 Ti = fTTstar(M_in) / fTTstar(M_ex) * Te;
+% calcule de ro
+ro_e = pe/ (Te* R);
+ro_i = pe/ (Ti* R);
 % calcule du Reynolds
-Re_ex = M_ex * veloC(Te) * Dh_duct / mu_T(Te);
-Re_in = M_in * veloC(Ti) * Dh_duct / mu_T(Ti);
+Re_ex = M_ex * veloC(Te) * Dh_duct *ro_e / mu_T(Te);
+Re_in = M_in * veloC(Ti) * Dh_duct *ro_i / mu_T(Ti);
 Re_duct = (Re_ex + Re_in)/2;
 % recalcule du lambda 
 lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))^(-1)))-1/sqrt(lambda_init);
@@ -96,15 +99,17 @@ lambda = fsolve(lambda_cole,0.1,options);
 error = abs(lambda - lambda0);
 lambda0 = lambda;
 end
-lambda
 
 T0i= T0T(M_in) * Ti;
 p0e = P0P(M_ex)*pe;
-ro_e = pe/ (Te* R);
+
 
 p0i = fp0pstar0(M_in)/fp0pstar0(M_ex) * p0e;
 pi  = p0i/P0P(M_in);
 
+M_in
+M_ex
+p0
 
 
 
