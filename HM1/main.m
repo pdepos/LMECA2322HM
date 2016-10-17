@@ -62,7 +62,7 @@ T0e = T0; pe = pa;
 % For this problematic
 T0 = 273; % [K]
 pa = 1;   % [atm] ~= [bar]
-Mg1 = 0.335; 
+Mg1 = 0.1; 
 M_ex = Mg1;
 
 
@@ -87,8 +87,8 @@ M_in = fsolve(f_Mnd,0.1,options);
 Te = T0e/T0T(M_ex);
 Ti = fTTstar(M_in) / fTTstar(M_ex) * Te;
 % calcule du Reynolds
-Re_ex = M_ex * veloC(Te) * duct_l / mu_T(Te);
-Re_in = M_in * veloC(Ti) * duct_l / mu_T(Ti);
+Re_ex = M_ex * veloC(Te) * Dh_duct / mu_T(Te);
+Re_in = M_in * veloC(Ti) * Dh_duct / mu_T(Ti);
 Re_duct = (Re_ex + Re_in)/2;
 % recalcule du lambda 
 lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))^(-1)))-1/sqrt(lambda_init);
