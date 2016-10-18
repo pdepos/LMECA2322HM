@@ -39,7 +39,7 @@ pa = 101325;   % [Pa] ~= 1.01325[bar]
 mu_ref = 1.716*10^(-5); % [N.s/m²]
 S_ref  = 111.0;  %[K]
 T_ref  = 273.15; %[K]
-mu_T = @(T) ( ((T/T_ref)^(3/2))*((T_ref + S_ref)/(T + S_ref)) );
+mu_T = @(T) ( ((T/T_ref)^(3/2))*((T_ref + S_ref)/(T + S_ref)) )*mu_ref;
 % Fanno
  f_M = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )); 
  fp0pstar0 = @(M) 1/M * (( 1 + (gamma-1)/2 *M*M )/((gamma+1)/2) )^((gamma+1)/(2*(gamma-1)));
@@ -62,7 +62,7 @@ mu_T = @(T) ( ((T/T_ref)^(3/2))*((T_ref + S_ref)/(T + S_ref)) );
 % TO DO: Err.. comment rafiner M_ex ? 
 T0e = T0; pe = pa; 
 
-Mg1 = 0.5; 
+Mg1 = 0.9; 
 M_ex = Mg1;
 
 
@@ -92,13 +92,13 @@ Te = T0e/T0T(M_ex);
 Ti = T0e/T0T(M_in);
 
 % calcule de ro
-ro_e = pe/ (Te* R)
-ro_i = pe/ (Ti* R)
+ro_e = pe/ (Te* R);
+ro_i = pe/ (Ti* R);
  
 % calcule du Reynolds
-Re_ex = M_ex * veloC(Te) * Dh_duct *ro_e / mu_T(Te)
-Re_in = M_in * veloC(Ti) * Dh_duct *ro_i / mu_T(Ti)
-Re_duct = (Re_ex + Re_in)/2
+Re_ex = M_ex * veloC(Te) * Dh_duct *ro_e / mu_T(Te);
+Re_in = M_in * veloC(Ti) * Dh_duct *ro_i / mu_T(Ti);
+Re_duct = (Re_ex + Re_in)/2;
 
 % recalcule du lambda 
 lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))^(-1)))-1/sqrt(lambda_init);
@@ -123,9 +123,6 @@ ro_i = pe/ (Ti* R);
 %calcule dans le nozzle
 ro_i = pi/(Ti*R);
 ro_t = Aexha/Astar * ro_i * M_in * veloC(Ti);
-
-QmP= @(p0) ( ((2/(gamma+1)).^((gamma+1)/(2*(gamma-1)))) * sqrt(gamma/R) * p0 / sqrt(T0e)) - ro_t;
-p0 = fsolve(QmP,0);
 
 % Test du Fanno (pour être sur d'avoir le même graphe)
 %x = linspace(0.3,2,100); 
