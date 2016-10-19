@@ -60,9 +60,11 @@ mu_T = @(T) ( ((T/T_ref)^(3/2))*((T_ref + S_ref)/(T + S_ref)) )*mu_ref;
 % TO DO: il faut encore faire l'itération pour vérifié Mguess et Lambda
 % guess
 % TO DO: Err.. comment rafiner M_ex ? 
+options = optimset('Display','off');
+
 T0e = T0; pe = pa; 
 
-Mg1 = 0.9; 
+Mg1 = 0.24; 
 M_ex = Mg1;
 
 
@@ -72,42 +74,53 @@ Aduct = duct_w * duct_h;
 Dh_duct = 4*(duct_w * duct_h) / (2*( duct_w + duct_h)); % diamètre hydrolique pour un rectangle 
 
 
+AstarAfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - 0.4;
+M_in_min = fsolve(AstarAfsolve,0.5,options);
+
 lambda0 = 0.5;
 lambda = lambda0;
 error = 10;
-while error > 0.0001
-% old fM = lambda/2 * (duct_l)/Dh_duct;
-fM = lambda * duct_coeff * duct_l / duct_d;
-% On va essayer de trouver M_in 
-% pour f(M) = f(M1) - f(M2)  
-fM1 = fM + f_M(Mg1);
+  while error > 0.0001
+   %fM = lambda/2 * (duct_l)/Dh_duct;
+   fM = lambda * duct_coeff * duct_l / duct_d;
+   % On va essayer de trouver M_in 
+   % pour f(M) = f(M1) - f(M2)  
+   fM1 = fM + f_M(M_ex);
 
-% On établit l'équation à faire entrer dans fsolve 
-f_Mnd = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - fM1 ; 
-M_in = fsolve(f_Mnd,0.5);
+   % On établit l'équation à faire entrer dans fsolve 
+   
+   f_Mnd = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - fM1 ; 
+   M_in = fsolve(f_Mnd,0.5,options);
 
-% calcule des températures Te et Ti
-Te = T0e/T0T(M_ex);
-%Ti = fTTstar(M_in) / fTTstar(M_ex) * Te;
-Ti = T0e/T0T(M_in);
+   % calcule des températures Te et Ti
+   Te = T0e/T0T(M_ex);
+   %Ti = fTTstar(M_in) / fTTstar(M_ex) * Te;
+   Ti = T0e/T0T(M_in); 
 
-% calcule de ro
-ro_e = pe/ (Te* R);
-ro_i = pe/ (Ti* R);
+   % calcule de ro
+   ro_e = pe/ (Te* R);
+   ro_i = pe/ (Ti* R);
  
-% calcule du Reynolds
-Re_ex = M_ex * veloC(Te) * Dh_duct *ro_e / mu_T(Te);
-Re_in = M_in * veloC(Ti) * Dh_duct *ro_i / mu_T(Ti);
-Re_duct = (Re_ex + Re_in)/2;
+   % calcule du Reynolds
+   Re_ex = M_ex * veloC(Te) * Dh_duct *ro_e / mu_T(Te);
+   Re_in = M_in * veloC(Ti) * Dh_duct *ro_i / mu_T(Ti);
+   Re_duct = (Re_ex + Re_in)/2;
 
-% recalcule du lambda 
-lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))^(-1)))-1/sqrt(lambda_init);
-lambda = fsolve(lambda_cole,0.1)
-error = abs(lambda - lambda0);
-lambda0 = lambda;
-
-end
-
+   % recalcule du lambda 
+   
+   %lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))))-1/sqrt(lambda_init);
+   %lambda = fsolve(lambda_cole,lambda0)
+   interLambda_old= lambda;
+   errorLambda = 1;
+   while errorLambda > 0.001
+       interLambda_new = (-3*log10(2.03/Re_duct * 1/sqrt(interLambda_old)))^(-2);
+       errorLambda = interLambda_new - interLambda_old; 
+       interLambda_old = interLambda_new;
+   end
+   lambda = interLambda_new;
+   error = abs(lambda - lambda0);
+   lambda0 = lambda;
+  end
 
 T0i= T0T(M_in) * Ti;
 p0e = P0P(M_ex)*pe;
@@ -115,15 +128,11 @@ p0e = P0P(M_ex)*pe;
 p0i = fp0pstar0(M_in)/fp0pstar0(M_ex) * p0e;
 pi  = p0i/P0P(M_in);
 
-% calcule de ro
-ro_e = pe/ (Te* R);
-ro_i = pe/ (Ti* R);
+M_in_min;
+lambda
+M_in
 
-
-%calcule dans le nozzle
-ro_i = pi/(Ti*R);
-ro_t = Aexha/Astar * ro_i * M_in * veloC(Ti);
-
+p0i
 % Test du Fanno (pour être sur d'avoir le même graphe)
 %x = linspace(0.3,2,100); 
 %for i = 1 : 100 
