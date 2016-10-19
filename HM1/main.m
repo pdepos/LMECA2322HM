@@ -55,42 +55,35 @@ mu_T = @(T) ( ((T/T_ref)^(3/2))*((T_ref + S_ref)/(T + S_ref)) )*mu_ref;
 %% =======================================
 % Question 1)
 % a/ sonic at throat and subsonic downstream M < 1
-% Let chose a M Guess 1 = 0.5 and Lambda Guess 1
-
-% TO DO: il faut encore faire l'itération pour vérifié Mguess et Lambda
-% guess
-% TO DO: Err.. comment rafiner M_ex ? 
+% 
 options = optimset('Display','off');
-
-T0e = T0; pe = pa; 
-
-Mg1 = 0.24; 
-M_ex = Mg1;
+T0e = T0; pe = pa;
 
 
+% Calcule du M_in
+% Le fanno est dict� par le comportement du nozzle
 Astar = nozzle_ht*nozzle_w;
 Aexha = nozzle_he*nozzle_w;
 Aduct = duct_w * duct_h;
-Dh_duct = 4*(duct_w * duct_h) / (2*( duct_w + duct_h)); % diamètre hydrolique pour un rectangle 
-
+Dh_duct = 4*(duct_w * duct_h) / (2*( duct_w + duct_h));
 
 AstarAfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - 0.4;
-M_in_min = fsolve(AstarAfsolve,0.5,options);
-
+M_in = fsolve(AstarAfsolve,0.5,options);
+% Calcule du M_ex et lambda
 lambda0 = 0.5;
 lambda = lambda0;
-error = 10;
-  while error > 0.0001
+error = 1;
+while error > 0.0001
    %fM = lambda/2 * (duct_l)/Dh_duct;
    fM = lambda * duct_coeff * duct_l / duct_d;
    % On va essayer de trouver M_in 
    % pour f(M) = f(M1) - f(M2)  
-   fM1 = fM + f_M(M_ex);
+   fM1 = f_M(M_in) - fM;
 
    % On établit l'équation à faire entrer dans fsolve 
    
    f_Mnd = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - fM1 ; 
-   M_in = fsolve(f_Mnd,0.5,options);
+   M_ex = fsolve(f_Mnd,0.5,options);
 
    % calcule des températures Te et Ti
    Te = T0e/T0T(M_ex);
@@ -110,7 +103,7 @@ error = 10;
    
    %lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))))-1/sqrt(lambda_init);
    %lambda = fsolve(lambda_cole,lambda0)
-   interLambda_old= lambda;
+   interLambda_old= lambda0;
    errorLambda = 1;
    while errorLambda > 0.001
        interLambda_new = (-3*log10(2.03/Re_duct * 1/sqrt(interLambda_old)))^(-2);
@@ -120,26 +113,40 @@ error = 10;
    lambda = interLambda_new;
    error = abs(lambda - lambda0);
    lambda0 = lambda;
-  end
-
+end
+  
 T0i= T0T(M_in) * Ti;
 p0e = P0P(M_ex)*pe;
 
 p0i = fp0pstar0(M_in)/fp0pstar0(M_ex) * p0e;
 pi  = p0i/P0P(M_in);
+p0 = p0i;
+bar = 10^5;
 
-M_in_min;
-lambda
-M_in
-
-p0i
-% Test du Fanno (pour être sur d'avoir le même graphe)
+disp('       p0       p0i       p0e       pi        pe       M_in      M_ex     lambda ');
+disp([p0/bar p0i/bar p0e/bar pi/bar pe/bar M_in M_ex lambda ]);
+%% =======================================
 %x = linspace(0.3,2,100); 
 %for i = 1 : 100 
 %    y(i) = f_M(x(i)); 
 %end
 %plot(x,y)
 
+%% =======================================
+c1 = @(x) (-1)*sqrt((0.2543^2)-((x-0.03)^2))+0.2573;
+c2 = @(x)  (1)*sqrt((0.1537^2)-((x-0.12)^2))-0.1462;
+c3 = @(x) sqrt(1-x^2)
+x = linspace(-0.5,0.5,1000); 
+for i = 1 : 1000 
+    y1(i) = c1(x(i));
+    y2(i) = c2(x(i));
+    y3(i) = c3(x(i));
+end
+hold;
+plot(x,y1);
+plot(x,y2);
+axis('equal');
+hold;
 %% =======================================
 % Question 2)
 
