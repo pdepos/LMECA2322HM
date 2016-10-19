@@ -133,18 +133,13 @@ disp([p0/bar p0i/bar p0e/bar pi/bar pe/bar M_in M_ex lambda ]);
 %plot(x,y)
 
 %% =======================================
-c1 = @(x) (-1)*sqrt((0.2543^2)-((x-0.03)^2))+0.2573;
-c2 = @(x)  (1)*sqrt((0.1537^2)-((x-0.12)^2))-0.1462;
-c3 = @(x) sqrt(1-x^2)
-x = linspace(-0.5,0.5,1000); 
+x = linspace(0,0.12,1000); 
 for i = 1 : 1000 
-    y1(i) = c1(x(i));
-    y2(i) = c2(x(i));
-    y3(i) = c3(x(i));
+
+    y4(i) = height(x(i));
 end
 hold;
-plot(x,y1);
-plot(x,y2);
+plot(x,y4);
 axis('equal');
 hold;
 %% =======================================
