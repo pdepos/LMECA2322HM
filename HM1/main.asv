@@ -14,6 +14,7 @@ nozzle_he = nozzle_de / 2;  % [m]
 nozzle_dt = 0.006;          % [m]
 nozzle_ht = nozzle_dt / 2;  % [m]
 nozzle_w  = 0.050;          % [m] largeur constante du nozzle
+A_t       = nozzle_dt * nozzle_w; %[m²]
 
 % Chenal Duct
 duct_w = 0.050;     % [m]
@@ -22,6 +23,7 @@ duct_d = 0.015;     % [m]
 duct_l = 0.270;     % [m]
 duct_coeff = (duct_d + duct_w) / duct_w; %[adimensionnel]
 Dh_duct = 4*(duct_w * duct_d) / (2*( duct_w + duct_d)); %diam hydrolique pour Reynolds
+A_duct = duct_w * duct_d; %[m²]
 
 % For this problematic
 T0 = 300; % [K]
@@ -67,7 +69,6 @@ T0e = T0; pe = pa;
 % Le fanno est dicté par le comportement du nozzle
 Astar = nozzle_dt*nozzle_w;
 Aexha = nozzle_de*nozzle_w;
-Aduct = duct_w * duct_d;
 
 AstarAfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - 0.4;
 M_in = fsolve(AstarAfsolve,0.5,options);
@@ -150,17 +151,17 @@ bar = 10^5;
 
 height007 = 2 * height(0.07);
 A007      = height007 * nozzle_w;
-Astar1A007 = Astar / A007;
+A_tA007 = A_t / A007;
 
-Astar1A007fsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - Astar1A007;
-M_sh1 = fsolve(Astar1A007fsolve,1.2,options);
+A_tA007fsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - A_tA007;
+M_sh12 = fsolve(A_tA007fsolve,1.2,options);
 
-M_sh2 = (1 + (gamma - 1)/2*M_sh1^2 ) / (gamma*M_sh1^2 - (gamma - 1)/2 );
-Astar2 = A007 * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh2*M_sh2) )^((gamma+1)/(2*(gamma-1))) * M_sh2 );
-Astar2Aduct = Astar2 / Aduct;
+M_sh22 = (1 + (gamma - 1)/2*M_sh12^2 ) / (gamma*M_sh12^2 - (gamma - 1)/2 );
+Astar22 = A007 * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh22*M_sh22) )^((gamma+1)/(2*(gamma-1))) * M_sh22 );
+Astar22Aduct = Astar22 / A_duct;
 
-Astar2Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - Astar2Aduct;
-M_ind2 = fsolve(Astar2Aductfsolve,0.5,options);
+Astar22Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - Astar22Aduct;
+M_ind2 = fsolve(Astar22Aductfsolve,0.5,options);
 
 lambda02 = 0.5;
 lambda2 = lambda02;
@@ -210,8 +211,73 @@ end
 p0e2    = P0P(M_ex2)*pe;                               % Pression_0 sortie duct 
 p0i2    = fp0pstar0(M_ind2)/fp0pstar0(M_ex2) * p0e2;   % Pression_0 entree duct and after shock
 pi2     = p0i2/P0P(M_ind2);                            % Pression entree duct
-p0sh1   = p0i2 / P0sh2_P0sh1(M_sh1);
-p02     = p0sh1;
+p0sh12   = p0i2 / P0sh2_P0sh1(M_sh12);
+p02     = p0sh12;
 
 %% =======================================
 % Question 3)
+
+A_tA_duct = A_t / A_duct;
+
+A_tA_ductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - A_tA_duct;
+M_sh13 = fsolve(A_tA_ductfsolve,1.2,options);
+
+M_sh23 = (1 + (gamma - 1)/2*M_sh13^2 ) / (gamma*M_sh13^2 - (gamma - 1)/2 );
+Astar23 = A007 * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh23*M_sh23) )^((gamma+1)/(2*(gamma-1))) * M_sh23 );
+Astar23Aduct = Astar23 / A_duct;
+
+%Astar23Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - Astar23Aduct;
+%M_ind3 = fsolve(Astar23Aductfsolve,0.5,options);
+M_ind3  = M_sh23;
+
+lambda03 = 0.5;
+lambda3 = lambda03;
+error3 = 1;
+while error3 > 0.0001
+    
+   fM3 = lambda3 * duct_coeff * duct_l / duct_d;
+
+   % pour f(M) = f(M1) - f(M2)  
+   fM13 = f_M(M_ind3) - fM3;
+
+   % On Ã©tablit l'Ã©quation Ã  faire entrer dans fsolve 
+   
+   f_Mnd = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - fM13 ; 
+   M_ex3 = fsolve(f_Mnd,0.5,options);
+
+   % calcule des tempÃ©ratures Te et Ti
+   Te3 = T0/T0T(M_ex3);
+   Ti3 = T0/T0T(M_ind3); 
+
+   % calcule de ro
+   ro_e3 = pe/ (Te3* R);
+   ro_i3 = pe/ (Ti3* R);
+ 
+   % calcule du Reynolds
+   Re_ex3 = M_ex3  * veloC(Te3) * Dh_duct *ro_e3 / mu_T(Te3);
+   Re_in3 = M_ind3 * veloC(Ti3) * Dh_duct *ro_i3 / mu_T(Ti3);
+   Re_duct3 = (Re_ex3 + Re_in3)/2;
+
+   % recalcule du lambda 
+   
+   %lambda_cole = @(lambda_init) ((-3*log10(2.03/Re_duct * 1/sqrt(lambda_init))))-1/sqrt(lambda_init);
+   %lambda = fsolve(lambda_cole,lambda0)
+   interLambda_old3 = lambda03;
+   errorLambda3 = 1;
+   while errorLambda3 > 0.001
+       interLambda_new3 = (-3*log10(2.03/Re_duct3 * 1/sqrt(interLambda_old3)))^(-2);
+       errorLambda3 = interLambda_new3 - interLambda_old3; 
+       interLambda_old3 = interLambda_new3;
+   end
+   lambda3 = interLambda_new3;
+   error3 = abs(lambda3 - lambda03);
+   lambda03 = lambda3;
+end
+
+
+p0e3    = P0P(M_ex3)*pe;                               % Pression_0 sortie duct 
+p0i3    = fp0pstar0(M_ind3)/fp0pstar0(M_ex3) * p0e3;   % Pression_0 entree duct and after shock
+pi3     = p0i3/P0P(M_ind3);                            % Pression entree duct
+p0sh13   = p0i3 / P0sh2_P0sh1(M_sh13);
+p03     = p0sh13;
+
