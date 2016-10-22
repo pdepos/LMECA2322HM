@@ -2,6 +2,8 @@
 %  by Philippe de Posson   5706-10-00
 %     Thanh-Son Tran       8116-12-00
 %% =======================================
+clear;
+
 % Data
 % Fluide Air
 gamma = 1.4;
@@ -74,9 +76,8 @@ Aexha = nozzle_de*nozzle_w;
 AstarAfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - 0.4;
 M_in = fsolve(AstarAfsolve,0.5,options);
 
-p0i = fp0pstar0(M_in)/fp0pstar0(M_ex) * p0e;
-pi  = p0i/P0P(M_in);
-p0 = p0i;
+
+
 bar = 10^5;
 
 % Calcule du M_ex et lambda
@@ -100,6 +101,10 @@ while error > 0.0001
    %Ti = fTTstar(M_in) / fTTstar(M_ex) * Te;
    Ti = T0e/T0T(M_in); 
 
+   p0e = P0P(M_ex)*pe;
+   p0i = fp0pstar0(M_in)/fp0pstar0(M_ex) * p0e;
+   pi  = p0i/P0P(M_in);
+   p0 = p0i;
    % calcule de ro
    ro_e = pe/ (Te* R);
    ro_i = pi/ (Ti* R);
@@ -123,7 +128,7 @@ while error > 0.0001
 end
   
 T0i= T0T(M_in) * Ti;
-p0e = P0P(M_ex)*pe;
+
 
 
 %% =======================================
@@ -162,8 +167,8 @@ Astar22Aduct = Astar22 / A_duct;
 
 Astar22Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - Astar22Aduct;
 M_ind2 = fsolve(Astar22Aductfsolve,0.5,options);
-p0i2    = fp0pstar0(M_ind2)/fp0pstar0(M_ex2) * p0e2;   % Pression_0 entree duct and after shock
-pi2     = p0i2/P0P(M_ind2); 
+
+
 
 lambda02 = 0.009;
 lambda2 = lambda02;
@@ -184,6 +189,9 @@ while error2 > 0.0001
    Te2 = T0/T0T(M_ex2);
    Ti2 = T0/T0T(M_ind2); 
 
+   p0e2    = P0P(M_ex2)*pe;                               % Pression_0 sortie duct 
+   p0i2    = fp0pstar0(M_ind2)/fp0pstar0(M_ex2) * p0e2;   % Pression_0 entree duct and after shock
+   pi2     = p0i2/P0P(M_ind2); 
    % calcule de ro
    ro_e2 = pe/ (Te2* R);
    ro_i2 = pi2/ (Ti2* R);
@@ -207,7 +215,7 @@ while error2 > 0.0001
 end
 
 
-p0e2    = P0P(M_ex2)*pe;                               % Pression_0 sortie duct                            % Pression entree duct
+% Pression entree duct
 p0sh12   = p0i2 / P0sh2_P0sh1(M_sh12);
 p02     = p0sh12;
 
@@ -226,8 +234,8 @@ Astar23Aduct = Astar23 / A_duct;
 %Astar23Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - Astar23Aduct;
 %M_ind3 = fsolve(Astar23Aductfsolve,0.5,options);
 M_ind3  = M_sh23;
-p0i3    = fp0pstar0(M_ind3)/fp0pstar0(M_ex3) * p0e3;   % Pression_0 entree duct and after shock
-pi3     = p0i3/P0P(M_ind3); 
+
+
 
 lambda03 = 0.009;
 lambda3 = lambda03;
@@ -248,6 +256,10 @@ while error3 > 0.0001
    Te3 = T0/T0T(M_ex3);
    Ti3 = T0/T0T(M_ind3); 
 
+   p0e3    = P0P(M_ex3)*pe;                               % Pression_0 sortie duct   
+   p0i3    = fp0pstar0(M_ind3)/fp0pstar0(M_ex3) * p0e3;   % Pression_0 entree duct and after shock
+   pi3     = p0i3/P0P(M_ind3); 
+   
    % calcule de ro
    ro_e3 = pe/ (Te3* R);
    ro_i3 = pi3/ (Ti3* R);
@@ -271,7 +283,9 @@ while error3 > 0.0001
 end
 
 
-p0e3    = P0P(M_ex3)*pe;                               % Pression_0 sortie duct                            % Pression entree duct
+
+
+% Pression entree duct
 p0sh13   = p0i3 / P0sh2_P0sh1(M_sh13);
 p03     = p0sh13;
 %% ==========
@@ -284,19 +298,72 @@ p0star = p0i/ fp0pstar0(M_in);
 pstar   = pi/  fppstar(M_in);
 result = zeros(step,1);
 for i = 1 : step
-  if X(i) < 0.12 %Nozzle
-     AstarASolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M)- ( Astar/(2*height(X(i))*nozzle_w));
+  if Xplot(i) < 0.12 %Nozzle
+     AstarASolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M)- ( Astar/(2*height(Xplot(i))*nozzle_w));
      result(i,1) = fsolve(AstarASolve,0.5,options);
      result(i,2) = p0i;
      result(i,3) = p0i/P0P(result(i,1));
   else %Fanno
-     fM = lambda * duct_coeff * (X(i)-0.12)/ duct_d;
+     fM = lambda * duct_coeff * (Xplot(i)-0.12)/ duct_d;
      f_MSolve = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - (f_M(M_in) - fM); 
      result(i,1) = fsolve(f_MSolve,0.5,options);
      result(i,2) = fp0pstar0(result(i,1))*p0star;
      result(i,3) = fppstar(result(i,1))*pstar;    
   end
 end
+%% =============================
+% CASE 2:
+p0star = p0i2/ fp0pstar0(M_ind2);
+pstar   = pi2/  fppstar(M_ind2);
+for i = 1 : step
+  if Xplot(i) < 0.07 %Nozzle
+     AstarASolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M)- ( Astar/(2*height(Xplot(i))*nozzle_w));
+     result(i,4) = fsolve(AstarASolve,1.2,options);
+     result(i,5) = p0sh12;
+     result(i,6) = p0sh12/P0P(result(i,4));
+  end
+  if (Xplot(i) > 0.07) && (Xplot(i) < 0.12 )
+     %Astar22 = (height(Xplot(i)) * nozzle_w) * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh22*M_sh22) )^((gamma+1)/(2*(gamma-1))) * M_sh22 );
+     Astar22Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - (Astar22 /(2*height(Xplot(i))*nozzle_w));
+     result(i,4) = fsolve(Astar22Aductfsolve,0.5,options);
+     result(i,5) = p0i2;
+     result(i,6) = p0i2/P0P(result(i,4));
+  end
+  if (Xplot(i) > 0.12) %Fanno
+     fM = lambda * duct_coeff * (Xplot(i)-0.12)/ duct_d;
+     f_MSolve = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - (f_M(M_ind2) - fM); 
+     result(i,4) = fsolve(f_MSolve,0.5,options);
+     result(i,5) = fp0pstar0(result(i,4))*p0star;
+     result(i,6) = fppstar(result(i,4))*pstar;    
+  end
+end
+%% =============================
+% CASE 3:
+p0star = p0i3/ fp0pstar0(M_ind3);
+pstar   = pi3/  fppstar(M_ind3);
+for i = 1 : step
+  if Xplot(i) <= 0.12 %Nozzle
+     AstarASolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M)- ( Astar/(2*height(Xplot(i))*nozzle_w));
+     result(i,7) = fsolve(AstarASolve,1.2,options);
+     result(i,8) = p0sh13;
+     result(i,9) = p0sh13/P0P(result(i,7));
+  end
+  %if (Xplot(i) > 0.07) && (Xplot(i) < 0.12 )
+  %   %Astar22 = (height(Xplot(i)) * nozzle_w) * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh22*M_sh22) )^((gamma+1)/(2*(gamma-1))) * M_sh22 );
+  %   Astar22Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - (Astar22 /(2*height(Xplot(i))*nozzle_w));
+  %   result(i,4) = fsolve(Astar22Aductfsolve,0.5,options);
+  %   result(i,5) = p0i2;
+  %   result(i,6) = p0i2/P0P(result(i,4));
+  %end
+  if (Xplot(i) > 0.12) %Fanno
+     fM = lambda * duct_coeff * (Xplot(i)-0.12)/ duct_d;
+     f_MSolve = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - (f_M(M_ind2) - fM); 
+     result(i,7) = fsolve(f_MSolve,0.5,options);
+     result(i,8) = fp0pstar0(result(i,4))*p0star;
+     result(i,9) = fppstar(result(i,4))*pstar;    
+  end
+end
+%% =============================
 figure;
 subplot(3,1,1);
 plot(Xplot,result(:,1));
@@ -306,6 +373,28 @@ plot(Xplot,result(:,2));
 title('P0(x) Total Pression');
 subplot(3,1,3);
 plot(Xplot,result(:,3));
+title('P(x) Pression');
+
+figure;
+subplot(3,1,1);
+plot(Xplot,result(:,4));
+title('M(x) Mach Number');
+subplot(3,1,2);
+plot(Xplot,result(:,5));
+title('P0(x) Total Pression');
+subplot(3,1,3);
+plot(Xplot,result(:,6));
+title('P(x) Pression');
+
+figure;
+subplot(3,1,1);
+plot(Xplot,result(:,7));
+title('M(x) Mach Number');
+subplot(3,1,2);
+plot(Xplot,result(:,8));
+title('P0(x) Total Pression');
+subplot(3,1,3);
+plot(Xplot,result(:,9));
 title('P(x) Pression');
 %% ==========
 % Result
