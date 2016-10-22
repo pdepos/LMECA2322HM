@@ -2,7 +2,7 @@
 %  by Philippe de Posson   5706-10-00
 %     Thanh-Son Tran       8116-12-00
 %% =======================================
-clear;
+close all;
 
 % Data
 % Fluide Air
@@ -128,7 +128,7 @@ while error > 0.0001
 end
   
 T0i= T0T(M_in) * Ti;
-
+Qm1 = QmP(p0i,T0e,Astar);
 
 
 %% =======================================
@@ -218,6 +218,7 @@ end
 % Pression entree duct
 p0sh12   = p0i2 / P0sh2_P0sh1(M_sh12);
 p02     = p0sh12;
+Qm2 = QmP(p0i2,T0e,Astar);
 
 %% =======================================
 % Question 3)
@@ -288,6 +289,7 @@ end
 % Pression entree duct
 p0sh13   = p0i3 / P0sh2_P0sh1(M_sh13);
 p03     = p0sh13;
+Qm3 = QmP(p03,T0e,Astar);
 %% ==========
 % Plotting
 step = 200;
@@ -298,7 +300,7 @@ p0star = p0i/ fp0pstar0(M_in);
 pstar   = pi/  fppstar(M_in);
 result = zeros(step,1);
 for i = 1 : step
-  if Xplot(i) < 0.12 %Nozzle
+  if Xplot(i) <= 0.12 %Nozzle
      AstarASolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M)- ( Astar/(2*height(Xplot(i))*nozzle_w));
      result(i,1) = fsolve(AstarASolve,0.5,options);
      result(i,2) = p0i;
@@ -322,14 +324,14 @@ for i = 1 : step
      result(i,5) = p0sh12;
      result(i,6) = p0sh12/P0P(result(i,4));
   end
-  if (Xplot(i) > 0.07) && (Xplot(i) < 0.12 )
+  if (Xplot(i) >= 0.07) && (Xplot(i) < 0.12 )
      %Astar22 = (height(Xplot(i)) * nozzle_w) * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh22*M_sh22) )^((gamma+1)/(2*(gamma-1))) * M_sh22 );
      Astar22Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - (Astar22 /(2*height(Xplot(i))*nozzle_w));
      result(i,4) = fsolve(Astar22Aductfsolve,0.5,options);
      result(i,5) = p0i2;
      result(i,6) = p0i2/P0P(result(i,4));
   end
-  if (Xplot(i) > 0.12) %Fanno
+  if (Xplot(i) >= 0.12) %Fanno
      fM = lambda * duct_coeff * (Xplot(i)-0.12)/ duct_d;
      f_MSolve = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - (f_M(M_ind2) - fM); 
      result(i,4) = fsolve(f_MSolve,0.5,options);
@@ -348,13 +350,6 @@ for i = 1 : step
      result(i,8) = p0sh13;
      result(i,9) = p0sh13/P0P(result(i,7));
   end
-  %if (Xplot(i) > 0.07) && (Xplot(i) < 0.12 )
-  %   %Astar22 = (height(Xplot(i)) * nozzle_w) * ( ( ((gamma+1)/2) / (1+(gamma-1)/2 * M_sh22*M_sh22) )^((gamma+1)/(2*(gamma-1))) * M_sh22 );
-  %   Astar22Aductfsolve = @(M) ( (((gamma+1)/2)/( 1+ (gamma-1)/2 * M*M ))^((gamma+1)/(2*(gamma-1)))*M) - (Astar22 /(2*height(Xplot(i))*nozzle_w));
-  %   result(i,4) = fsolve(Astar22Aductfsolve,0.5,options);
-  %   result(i,5) = p0i2;
-  %   result(i,6) = p0i2/P0P(result(i,4));
-  %end
   if (Xplot(i) > 0.12) %Fanno
      fM = lambda * duct_coeff * (Xplot(i)-0.12)/ duct_d;
      f_MSolve = @(M) ( (1/gamma)*( ((1-(M*M) )/(M*M)) + ((gamma+1)/2)*log(  ((gamma+1)/2*(M*M))/(1+((gamma-1)/2) *(M*M)) ) )) - (f_M(M_ind2) - fM); 
@@ -398,7 +393,7 @@ plot(Xplot,result(:,9));
 title('P(x) Pression');
 %% ==========
 % Result
-disp('       p0       p0i       p0e       pi        pe       M_in      M_ex     lambda ');
-disp([p0/bar p0i/bar p0e/bar pi/bar pe/bar M_in M_ex lambda ]);
-disp([p02/bar p0i2/bar p0e2/bar pi2/bar pe/bar M_ind2 M_ex2 lambda2 ]);
-disp([p03/bar p0i3/bar p0e3/bar pi3/bar pe/bar M_ind3 M_ex3 lambda3 ]);
+disp('       p0       p0i       p0e       pi        pe       M_in      M_ex     lambda     Qm');
+disp([p0/bar p0i/bar p0e/bar pi/bar pe/bar M_in M_ex lambda Qm1]);
+disp([p02/bar p0i2/bar p0e2/bar pi2/bar pe/bar M_ind2 M_ex2 lambda2 Qm2]);
+disp([p03/bar p0i3/bar p0e3/bar pi3/bar pe/bar M_ind3 M_ex3 lambda3 Qm3]);
